@@ -2,11 +2,17 @@
 const { MongoClient } = require('mongodb');
 
 class AnalyticsService {
+  // cache client to avoid reconnecting every call
+  static client = null;
+  static dbName = 'vibesnap_analytics';
+
   static async getDatabase() {
     try {
-      const client = new MongoClient(process.env.MONGODB_URI);
-      await client.connect();
-      return client.db('vibesnap_analytics');
+      if (!this.client || !this.client.topology || !this.client.topology.isConnected()) {
+        this.client = new MongoClient(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true });
+        await this.client.connect();
+      }
+      return this.client.db(this.dbName);
     } catch (error) {
       console.error('MongoDB connection error:', error);
       throw error;
@@ -111,10 +117,11 @@ class AnalyticsService {
     }
   }
 
+  // Fix: aggregate by the field value (use "$<fieldName>")
   static async aggregateField(collection, fieldName) {
     return await collection.aggregate([
       { $match: { [fieldName]: { $exists: true, $ne: null } } },
-      { $group: { _id: `${fieldName}`, count: { $sum: 1 } } },
+      { $group: { _id: `$${fieldName}`, count: { $sum: 1 } } },
       { $sort: { count: -1 } }
     ]).toArray();
   }
@@ -157,16 +164,19 @@ class AnalyticsService {
     return Math.round(totalUploads / 30 * 10) / 10;
   }
 
+  // helper kept as-is
   static formatAggregation(aggregation) {
     const result = {};
     aggregation.forEach(item => {
-      result[item._id] = item.count;
+      // item._id may be null/undefined — fallback to 'unknown'
+      const key = item._id ?? 'unknown';
+      result[key] = item.count;
     });
     return result;
   }
 
   static getTopFromAggregation(aggregation) {
-    return aggregation.length > 0 ? aggregation[0]._id : 'unknown';
+    return aggregation.length > 0 ? (aggregation[0]._id ?? 'unknown') : 'unknown';
   }
 
   static detectPhotoType(description) {

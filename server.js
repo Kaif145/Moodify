@@ -11,6 +11,8 @@ console.log('🔑 Key length:', process.env.OPENROUTER_API_KEY?.length || 'undef
 const express = require("express");
 const path = require("path");
 const fs = require("fs");
+const AnalyticsService = require('./services/analyticsService');
+const AnalyticsController = require('./controllers/analyticsController');
 
 // Import routes
 const uploadRoutes = require("./routes/upload");
@@ -44,6 +46,14 @@ app.use("/api", analyticsRoutes);
 // Serve main page
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
+// Expose analytics endpoints (keep API under /api)
+app.get('/api/analytics', AnalyticsController.getAnalytics);
+
+// Serve dashboard HTML (static file)
+app.get('/dashboard', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
 });
 
 // Error handling middleware (must be last)
