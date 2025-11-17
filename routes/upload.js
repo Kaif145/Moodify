@@ -1,22 +1,56 @@
 // routes/upload.js - Upload route definitions
 const express = require("express");
-const upload = require("../middleware/upload");
-const { validateFileUpload } = require("../middleware/validation");
-const UploadController = require("../controllers/uploadController");
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
+const AnalyticsService = require("../services/analyticsService");
 
 const router = express.Router();
 
-// Main upload endpoint
-router.post("/upload", 
-  upload.single("photo"),
-  validateFileUpload,
-  UploadController.handlePhotoUpload
-);
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }
+});
 
-// Bulk upload endpoint (future feature)
-router.post("/upload/bulk",
-  upload.array("photos", 10),
-  UploadController.handleBulkUpload
-);
+// Main upload endpoint
+router.post("/upload", upload.single("photo"), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: "No file uploaded" });
+    }
+
+    const { description = "", preference = "", language = "mixed" } = req.body;
+    const filename = `${Date.now()}-${req.file.originalname}`;
+    const uploadsDir = path.join(__dirname, "../uploads");
+    const filePath = path.join(uploadsDir, filename);
+
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+
+    // Save file
+    fs.writeFileSync(filePath, req.file.buffer);
+
+    // Track analytics in background (non-blocking)
+    AnalyticsService.trackPhotoUpload(
+      description,
+      preference,
+      language,
+      req.headers["user-agent"] || "",
+      req.ip || req.headers["x-forwarded-for"] || ""
+    ).catch(err => console.error("Analytics error:", err));
+
+    // Return immediately
+    res.json({
+      success: true,
+      message: "Photo uploaded successfully",
+      filename
+    });
+
+  } catch (error) {
+    console.error("Upload error:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 module.exports = router;
