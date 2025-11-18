@@ -288,7 +288,7 @@ async function getMoodSongs() {
       enhancedMatching: true
     };
 
-    const response = await fetch('/api/notes/mood', {
+    const response = await fetch('/api/vibe', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -327,7 +327,7 @@ async function getMoreMoodSongs() {
   showNotesLoading();
 
   try {
-    const response = await fetch('/api/notes/mood', {
+    const response = await fetch('/api/trending', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -373,7 +373,7 @@ async function getTrendingSongs() {
     const viralData = await getViralTrendingData();
     
     // Enhanced API call with viral context
-    const apiUrl = `/api/notes/trending?language=${language}&includeViral=true&viralData=${encodeURIComponent(JSON.stringify(viralData))}`;
+    const apiUrl = `/api/trending?language=${language}&includeViral=true&viralData=${encodeURIComponent(JSON.stringify(viralData))}`;
     const response = await fetch(apiUrl);
     const data = await response.json();
 

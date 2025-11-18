@@ -1,29 +1,15 @@
-// routes/notes.js - Instagram Notes route definitions
+// routes/notes.js - FINAL WORKING VERSION
 const express = require("express");
-const NotesController = require("../controllers/notesController");
-// const { validateNotesRequest } = require("../middleware/validation");
-
 const router = express.Router();
+const NotesController = require("../controllers/notesController");
 
-console.log("NotesController:", NotesController);
+// MAIN "Find My Vibe" BUTTON (this is your text → music)
+router.post("/vibe", NotesController.getMoodBasedSongs);
 
+// Trending Now button
+router.get("/trending", NotesController.getTrendingSongs);
 
-// Get songs for Instagram Notes based on mood
-router.post("/notes/mood", 
-  // validateNotesRequest,
-  NotesController.getMoodBasedSongs
-);
-
-// Get songs for Instagram Story
-// router.post("/notes/story",
-//   // validateNotesRequest, 
-//   NotesController.getStorySongs
-// );
-
-// Get trending songs for Instagram Notes
-router.get("/notes/trending",
-  NotesController.getTrendingSongs
-);
-
+// Optional: if you ever want /story route
+// router.post("/story", NotesController.getStorySongs);
 
 module.exports = router;
